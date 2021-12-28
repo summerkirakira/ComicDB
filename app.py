@@ -3,7 +3,7 @@ import datetime
 from services.db import create_all_db, add_new_book, get_author_by_id, update_book_info
 from services import engine
 import os
-from flask import Flask, request, Response
+from flask import Flask, request, Response, send_file
 from services import logger
 
 
@@ -37,7 +37,11 @@ app = Flask(__name__)
 def get_book_content():
     data = request.args
     content, mimetype = engine.BookContent.process(**data)
-    return Response(content, mimetype=mimetype)
+    if mimetype.startswith('path'):
+        name = mimetype.split('/')[-1]
+        return send_file(content, as_attachment=True, attachment_filename=name)
+    else:
+        return Response(content, mimetype=mimetype)
 
 
 @app.route('/api/add', methods=['POST'])

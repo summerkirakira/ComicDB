@@ -1,4 +1,4 @@
-__package__ = "cdb"
+__package__ = "comicdb"
 import datetime
 from services.db import create_all_db, add_new_book, get_author_by_id, update_book_info
 from services import engine

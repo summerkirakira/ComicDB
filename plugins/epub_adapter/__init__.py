@@ -87,3 +87,9 @@ class EpubCrawler(ComicCrawler):
             del book_info['published']
         self.insert_book(book_info)
         self.update_progress('crawl complete')
+
+
+@BookContent.handle('default_epub')
+def get_epub_resource(book: Book, *args, **kwargs) -> [bytes, str]:
+    return book.url, f'path/{book.title}.epub'
+
