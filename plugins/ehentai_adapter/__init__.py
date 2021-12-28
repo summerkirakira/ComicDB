@@ -64,6 +64,10 @@ class EHentaiZipDownloader(DefaultZipDownloader):
 
 
 class EhentaiCrawler(ComicCrawler):
+    @classmethod
+    def get_name(cls):
+        return 'ehentai_crawler'
+
     my_header = {
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
@@ -156,7 +160,7 @@ class EhentaiCrawler(ComicCrawler):
                 image_url_list.append(image_url)
                 log.debug(f'Crawl succeed: {new_image_path}')
                 self.update_progress(
-                    f'Now crawling {img_index}/{book_info["length"]}({round(img_index / book_info["length"] * 100)}%)')
+                    f'Now crawling {img_index - 1}/{book_info["length"]}({round((img_index - 1) / book_info["length"] * 100)}%)')
                 time.sleep(0.5)
         book_info['url'] = book_folder_url
         book_info['e_hentai_info']['page_path_list'] = image_path_list
@@ -182,10 +186,7 @@ class EhentaiCrawler(ComicCrawler):
         result['file_type'] = 'ehentai_comic'
         result['content_info'] = json.dumps(result['e_hentai_info'])
         add_new_book(**result)
-        pass
-
-    def _crawl(self, crawl_info: dict) -> dict:
-
+        self.is_complete = True
         pass
 
 

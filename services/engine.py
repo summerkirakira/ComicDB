@@ -112,9 +112,9 @@ class ComicDownloader:
     executor = ThreadPoolExecutor(max_workers=5, thread_name_prefix='downloader_')
     current_downloaders = []
 
-    def __init__(self, name):
+    def __init__(self, uuid):
         self.result = None
-        self.name = name
+        self.name = uuid
         self.future = None
         self.current_downloaders.append('name')
 
@@ -155,18 +155,26 @@ class ComicCrawler:
     Every Crawler should inherited from this class, which is used to crawl book page by page
     """
     registered_downloader = {}
+    current_crawlers = {}
     executor = ThreadPoolExecutor(max_workers=5, thread_name_prefix='crawler_')
     """"""
-    def __del__(self):
-        del self.registered_downloader[self.uuid]
 
-    def __init__(self, name):
-        self.name = name
-        self.uuid = str(uuid.uuid1())
-        self.registered_downloader[self.uuid] = self
-        self.progress_display = f'Crawler: {self.name} initializing...'
+    @classmethod
+    @abc.abstractmethod
+    def get_name(cls):
+        return 'name'
+
+    def __del__(self):
+        del self.registered_downloader[self.crawler_id]
+
+    def __init__(self, crawler_id):
+        self.crawler_id = crawler_id
+        self.registered_downloader[self.crawler_id] = self
+        self.progress_display = f'Crawler initializing...'
         self.crawl_list = []
         self.book = None
+        self.is_stopped = False
+        self.is_complete = False
         """book"""
         self.result = None
 
@@ -198,15 +206,8 @@ class ComicCrawler:
         pass
 
     @abc.abstractmethod
-    def _crawl(self, crawl_info: dict) -> dict:
-        """Crawl a page or a chapter"""
-        pass
-
-    @abc.abstractmethod
     def crawl(self, future: Future):
         """
-        This method is the callback of get_book_info
-        No IO operation allowed in this method!
         It should be handled by crawl_part and  be committed to the tread pool
         """
         pass
@@ -214,17 +215,58 @@ class ComicCrawler:
     def update_crawl(self, book_info):
         """
         This method is the callback of can_crawl
-        No IO operation allowed in this method!
-        It should be handled by crawl_part and  be committed to the tread pool
         """
-        pass
-
-    def _update_crawl(self, book_info: dict):
         pass
 
     def crawl_new_book(self, *args, **kwargs):
         """Entry of crawling book from Internet"""
         crawler = self.executor.submit(self.get_book_info, *args, **kwargs)
         crawler.add_done_callback(self.crawl)
+
+    def get_progress(self) -> str:
+        return self.progress_display
+
+    def complete(self) -> str:
+        del self.current_crawlers[self.crawler_id]
+        self.__del__()
+        return 'ok'
+
+    @classmethod
+    def start(cls, crawler_name, **kwargs) -> dict:
+        for crawler in cls.__subclasses__():
+            if crawler.get_name() == crawler_name:
+                crawler_id = str(uuid.uuid1())
+                cls.current_crawlers[crawler_id] = crawler(crawler_id)
+                cls.current_crawlers[crawler_id].crawl_new_book(**kwargs)
+                return {
+                    'msg': 'ok',
+                    'uuid': crawler_id
+                }
+
+    @classmethod
+    def get_current_crawls(cls):
+        return [x for x in cls.current_crawlers]
+
+    @classmethod
+    def get_current_progress(cls, crawler_id: str):
+        if crawler_id in cls.current_crawlers:
+            if cls.current_crawlers[crawler_id].is_complete:
+                cls.current_crawlers[crawler_id].complete()
+                return 'crawled complete'
+            else:
+                return cls.current_crawlers[crawler_id].get_progress()
+        else:
+            return 'no such crawler running'
+
+
+def get_crawler_name_list() -> list:
+    crawler_list = []
+    for sub_class in ComicCrawler.__subclasses__():
+        crawler_list.append(sub_class)
+    return crawler_list
+
+
+def get_crawlers() -> list:
+    return ComicCrawler.__subclasses__()
 
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, Table, Integer, DateTime, create_engine, and_
+from sqlalchemy import Column, String, Integer, Float, ForeignKey, Table, Integer, DateTime, create_engine, and_, or_
 from sqlalchemy.orm import relationship, backref, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from services.logger import create_logger
@@ -166,13 +166,13 @@ def add_new_book(title: str,
                  author_name: str = '',
                  tags: Union[str] = [],
                  content_info: str = '',
-                 series_name: str = ''
-                 ) -> Book:
+                 series_name: str = '',
+                 *args, **kwargs) -> Book:
     book = (
         session.query(Book)
         .filter(Book.title == title)
-        .filter(Book.publishers.any(Publisher.name == publisher_name))
-        .filter(Book.authors.any(Author.name == author_name))
+        .filter(or_(Book.publishers == None, Book.publishers.any(Publisher.name == publisher_name)))
+        .filter(or_(Book.authors == None, Book.authors.any(Author.name == author_name)))
         .one_or_none()
     )
     if book is not None:
@@ -195,6 +195,7 @@ def add_new_book(title: str,
                     content_info=content_info,
                     uuid=str(uuid.uuid1())
                     )
+        session.add(book)
     publisher = (
         session.query(Publisher)
         .filter(Publisher.name == publisher_name)

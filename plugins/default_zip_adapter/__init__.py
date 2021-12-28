@@ -25,6 +25,7 @@ def default_zip_handler(page: int, book: Book, *args, **kwargs) -> (bytes, str):
     else:
         raise BookExistError
 
+
 class DefaultZipDownloader(ComicDownloader):
     """A Adapter that can extract basic info from zip compressed file"""
 
@@ -63,9 +64,6 @@ class DefaultZipDownloader(ComicDownloader):
                 with my_zip.open(cover_file_name) as cover:
                     with open(book_info['cover'], 'wb') as f:
                         f.write(cover.read())
-                    # image: Image = Image.open(book_info['cover'])
-                    # small_cover: Image = image.resize((150, 225))
-                    # small_cover.save(os.path.join(COVER_PATH, cover_uuid + f'_small.{cover_extend}'))
                 content = file_list[1:]
                 book_info['content_info'] = json.dumps(content)
                 return book_info

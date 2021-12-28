@@ -46,7 +46,8 @@ class Platform:
 
     def load_plugins(self):
         for folder_name in os.listdir("plugins"):
-            self.run_plugin(module_name=folder_name)
+            if not folder_name.startswith('.'):
+                self.run_plugin(module_name=folder_name)
 
     def run_plugin(self, module_name: str):
         plugin = __import__(f"plugins.{module_name}", fromlist=["__init__"])
@@ -56,5 +57,6 @@ class Platform:
 
 create_all_db()
 platform = Platform()
-log.debug('Platform start successful')
+# log.debug('Platform start successful')
+# print(engine.ComicCrawler.start(crawler_name='ehentai_crawler', url='https://e-hentai.org/g/2086988/a340834391/'))
 
