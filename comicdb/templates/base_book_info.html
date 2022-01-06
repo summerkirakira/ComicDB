@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:v-bind="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>{[ title ]}</title>
+{#    <script src="https://cdn.jsdelivr.net/npm/less@4.1.1" ></script>#}
+{#    <link rel="stylesheet" href="{{ url_for('static', filename='nav.css') }}" />#}
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+</head>
+<body>
+<div id="counter">
+    Counter: {{ counter }}
+</div>
+<div id="bind-attribute">
+    <span v-bind:title="message">
+
+    </span>
+</div>
+<div id="event-handling">
+    <p>{{ message }}</p>
+    <button v-on:click="reverseMessage">反转 Message</button>
+</div>
+<div id="todo-list-app">
+    <ol>
+        <todo-item
+            v-for="item in groceryList"
+            v-bind:todo="item"
+            v-bind:key="item.id"
+        >
+
+        </todo-item>
+    </ol>
+</div>
+<div id="nav">
+    <li v-for="item in items">
+        <p>{{ item.name }}</p>
+        <p>{{ item.value }}</p>
+    </li>
+</div>
+<script>
+    const Counter = {
+        data() {
+            return {
+                counter: 0
+            }
+        },
+        mounted() {
+        setInterval(() => {
+            this.counter++
+        }, 1000)
+    }
+    }
+
+    Vue.createApp(Counter).mount("#counter")
+
+
+    const EventHandling = {
+        data() {
+            return {
+                message: "Hello world!"
+            }
+        },
+        methods: {
+            reverseMessage() {
+                this.message = this.message
+                .split('')
+                .reverse()
+                .join('')
+            }
+        }
+    }
+    Vue.createApp(EventHandling).mount('#event-handling')
+
+
+
+    const TodoList = {
+        data() {
+            return {
+                groceryList: [
+                    {id: 0, text: 'Vegetable'},
+                    {id: 1, text: 'Cheese'}
+                ]
+                
+            }
+        }
+    }
+    const app = Vue.createApp(TodoList)
+
+    app.component('todo-item', {
+        props: ['todo'],
+        template: `<li>{{ todo.text }}</li>`
+    })
+    app.mount('#todo-list-app')
+
+    const nav_bar = {
+        data() {
+            return {
+                items: [
+                    {name: 'xiaoming', value: 'hello'},
+                    {name: 'hello', value: 'world'}
+                ]
+            }
+        }
+    }
+    const nav_app = Vue.createApp(nav_bar)
+    vm = nav_app.mount('#nav')
+
+</script>
+</body>
+</html>
