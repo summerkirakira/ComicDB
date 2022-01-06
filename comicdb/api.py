@@ -134,12 +134,13 @@ def get_list_query():
             return json.dumps({'msg': 'invalid page number'})
         books = db.BookListQuery.get_books_by_time(page=int(params['page']))
         book_list = []
-        while len(book_list) < 30:  # delete it after test !!!
-            for book in books:
-                book_info = {
-                    'book_id': book.book_id,
-                    'cover': book.cover,
-                    'authors': [author.name for author in book.authors]
-                }
-                book_list.append(book_info)
+        # while len(book_list) < 30:  # delete it after test !!!
+        for book in books:
+            book_info = {
+                'title': book.title,
+                'book_id': book.book_id,
+                'cover': book.cover.split('/')[-1],
+                'authors': [author.name for author in book.authors]
+            }
+            book_list.append(book_info)
         return json.dumps(book_list)

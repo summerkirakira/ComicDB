@@ -16,7 +16,6 @@ from datetime import datetime
 import random
 from ..default_zip_adapter import DefaultZipDownloader
 
-
 log = logger.create_logger('ehentai_adapter')
 
 
@@ -167,7 +166,7 @@ class EhentaiCrawler(ComicCrawler):
             'page_path_list': image_path_list,
             'image_url_list': image_url_list
         }
-        book_info['e_hentai_info']['page_number']=len(image_path_list)
+        book_info['e_hentai_info']['page_number'] = len(image_path_list)
         self.insert_book(book_info)
 
     def get_book_info(self, *args, **kwargs) -> dict:
@@ -188,7 +187,9 @@ class EhentaiCrawler(ComicCrawler):
                 result['tags'].append(tag_value)
         result['file_type'] = 'ehentai_comic'
         result['args'] = json.dumps(result['e_hentai_info'])
-        result['content_info'] = json.dumps([{"name": f"共{result['e_hentai_info']['page_number']}页", "chapters": [{"name": f"第{x+1}页"} for x in range(result['e_hentai_info']['page_number'])]}])
+        result['content_info'] = json.dumps([{"name": f"共{result['e_hentai_info']['page_number']}页",
+                                              "chapters": [{"name": f"第{x + 1}页", "href": str(x)} for x in
+                                                           range(result['e_hentai_info']['page_number'])]}])
         add_new_book(**result)
         self.is_complete = True
         pass
@@ -206,7 +207,6 @@ def ehentai_comic_handler(page: str, book: Book, *args, **kwargs) -> (bytes, str
             raise FileNotFoundError
     else:
         raise BookExistError
-
 
 # test_default_zip_downloader = EHentaiZipDownloader('test')
 # test_default_zip_downloader.start(file_path='data/[pecon (Kino)] Dokidoki Ichaicha Fuwafuwa   心神難寧, 恩恩愛愛, 輕飄飄 (Puella Magi Madoka Magica Side Story_ Magia Record) [Chinese] [Digital]-1280x.zip')

@@ -11,6 +11,7 @@ import requests
 from lxml import etree
 import uuid
 import time
+from lxml import etree
 import json
 from datetime import datetime
 import random
@@ -18,6 +19,7 @@ from ..default_zip_adapter import DefaultZipDownloader
 import ebooklib
 from dateutil.parser import parse
 from ebooklib import epub
+
 
 class EpubCrawler(ComicCrawler):
     @classmethod
@@ -28,8 +30,8 @@ class EpubCrawler(ComicCrawler):
         if 'path' in kwargs:
             book_info = {}
             book = epub.read_epub(kwargs['path'])
-            book_info['title'] = book.get_metadata('DC', 'title')[0][0]
-            book_info['author'] = book.get_metadata('DC', 'creator')[0][0]
+            book_info['title'] = book.title
+            book_info['author_name'] = [book.get_metadata('DC', 'creator')[0][0]]
             book_info['identifiers'] = book.get_metadata('DC', 'identifier')[0][0]
             try:
                 book_info['publisher'] = book.get_metadata('DC', 'publisher')[0][0]
@@ -39,10 +41,7 @@ class EpubCrawler(ComicCrawler):
                 book_info['description'] = book.get_metadata('DC', 'description')[0][0]
             except IndexError:
                 book_info['description'] = ''
-            try:
-                book_info['languages'] = book.get_metadata('DC', 'language')[0][0]
-            except IndexError:
-                book_info['languages'] = ''
+            book_info['languages'] = book.language
             try:
                 book_info['published'] = book.get_metadata('DC', 'date')[0][0]
             except IndexError:
@@ -53,9 +52,24 @@ class EpubCrawler(ComicCrawler):
                 cover = cover_image
             except IndexError:
                 cover = None
+            content_info = []
+            for part in book.toc:
+                if not isinstance(part, tuple):
+                    content_info.append({
+                        "name": part.title,
+                        "chapters": [{'name': part.title, 'href': part.href}]
+                    })
+                else:
+                    content_info.append({
+                        "name": part[0].title,
+                        "chapters": [{
+                            "href": x.href,
+                            "name": x.title
+                        } for x in part[1]]
+                    })
+            book_info['content_info'] = content_info
             book_info['cover'] = cover
             book_info['url'] = kwargs['path']
-            print(book_info)
             return book_info
         else:
             raise ValueError
@@ -85,6 +99,7 @@ class EpubCrawler(ComicCrawler):
             book_info['published'] = parse(book_info['published'])
         else:
             del book_info['published']
+        book_info['content_info'] = json.dumps(book_info['content_info'])
         self.insert_book(book_info)
         self.update_progress('crawl complete')
 
