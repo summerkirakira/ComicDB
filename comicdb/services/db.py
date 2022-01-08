@@ -218,6 +218,7 @@ def add_new_book(title: str,
 
             if author is not None:
                 log.debug(f"Author: {single_author_name} exists, skipped")
+                book.authors.append(author)
             else:
                 author = Author(name=single_author_name, picture='data/author/default.png', description='', is_stared=0)
                 session.add(author)
@@ -334,6 +335,54 @@ class BookListQuery:
     @classmethod
     def get_books_by_time(cls, page: int = 0, page_size: int = 30) -> List[Book]:
         q = session.query(Book).offset(page*page_size).limit(page_size)
+        return q
+
+    @classmethod
+    def get_books_by_author(cls, page: int = 0, page_size: int = 30, auther_name: str = '') -> List[Book]:
+        q = (session.query(Book)
+             .filter(Book.authors.any(Author.name == auther_name))
+             .offset(page*page_size)
+             .limit(page_size))
+        return q
+
+    @classmethod
+    def get_books_by_name(cls, page: int = 0, page_size: int = 30, book_name: str = '') -> List[Book]:
+        q = (session.query(Book)
+             .filter(Book.title == book_name)
+             .offset(page * page_size)
+             .limit(page_size))
+        return q
+
+    @classmethod
+    def get_books_by_series(cls, page: int = 0, page_size: int = 30, series_name: str = '') -> List[Book]:
+        q = (session.query(Book)
+             .filter(Book.publishers.any(Publisher.name == series_name))
+             .offset(page * page_size)
+             .limit(page_size))
+        return q
+
+    @classmethod
+    def get_books_by_like_name(cls, page: int = 0, page_size: int = 30, book_name: str = '') -> List[Book]:
+        q = (session.query(Book)
+             .filter(Book.title.contains(book_name))
+             .offset(page * page_size)
+             .limit(page_size))
+        return q
+
+    @classmethod
+    def get_books_by_like_author(cls, page: int = 0, page_size: int = 30, auther_name: str = '') -> List[Book]:
+        q = (session.query(Book)
+             .filter(Book.authors.any(Author.name.contains(auther_name)))
+             .offset(page * page_size)
+             .limit(page_size))
+        return q
+
+    @classmethod
+    def get_books_by_like_series(cls, page: int = 0, page_size: int = 30, series_name: str = '') -> List[Book]:
+        q = (session.query(Book)
+             .filter(Book.publishers.any(Publisher.name.contains(series_name)))
+             .offset(page * page_size)
+             .limit(page_size))
         return q
 
 

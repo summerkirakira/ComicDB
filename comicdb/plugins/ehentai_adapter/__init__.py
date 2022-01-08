@@ -16,6 +16,7 @@ from datetime import datetime
 import random
 from ..default_zip_adapter import DefaultZipDownloader
 
+
 log = logger.create_logger('ehentai_adapter')
 
 
@@ -23,14 +24,15 @@ def generate_valid_path(parent_path: str, file_name: str) -> str:
     file_name = file_name.replace('/', ' ').replace('\\', ' ')
     file_name_part = file_name.split(' ')
     final_index = len(file_name_part)
-    while True:
-        current_path = os.path.join(parent_path, ' '.join(file_name_part[:final_index]))
-        current_length = len(current_path)
-        if current_length < 248:
-            if len(' '.join(file_name_part[:final_index])) < 10:
-                current_path += str(int(random.random() * 1000000))
-            return current_path
-        final_index -= 1
+    # while True:
+    #     current_path = os.path.join(parent_path, ' '.join(file_name_part[:final_index]))
+    #     current_length = len(current_path)
+    #     if current_length < 248:
+    #         if len(' '.join(file_name_part[:final_index])) < 10:
+    #             current_path += str(int(random.random() * 1000000))
+    #         return current_path
+    #     final_index -= 1
+    return os.path.join(parent_path, file_name)
 
 
 class EHentaiZipDownloader(DefaultZipDownloader):
@@ -125,7 +127,7 @@ class EhentaiCrawler(ComicCrawler):
         with open(book_info['cover'], 'wb') as f:
             f.write(cover_img.content)
         page_max: int = book_info['length'] // 40 + 1
-        book_folder_url = generate_valid_path(os.path.abspath(os.path.join('data', 'books', 'ehentai_comic')),
+        book_folder_url = generate_valid_path(os.path.join('data', 'books', 'ehentai_comic'),
                                               book_info['title'])
         try:
             os.mkdir(book_folder_url)
@@ -166,7 +168,7 @@ class EhentaiCrawler(ComicCrawler):
             'page_path_list': image_path_list,
             'image_url_list': image_url_list
         }
-        book_info['e_hentai_info']['page_number'] = len(image_path_list)
+        book_info['e_hentai_info']['page_number']=len(image_path_list)
         self.insert_book(book_info)
 
     def get_book_info(self, *args, **kwargs) -> dict:
@@ -187,26 +189,82 @@ class EhentaiCrawler(ComicCrawler):
                 result['tags'].append(tag_value)
         result['file_type'] = 'ehentai_comic'
         result['args'] = json.dumps(result['e_hentai_info'])
-        result['content_info'] = json.dumps([{"name": f"共{result['e_hentai_info']['page_number']}页",
-                                              "chapters": [{"name": f"第{x + 1}页", "href": str(x)} for x in
-                                                           range(result['e_hentai_info']['page_number'])]}])
+        result['content_info'] = json.dumps([{"name": f"共{result['e_hentai_info']['page_number']}页", "chapters": [{"name": f"第{x+1}页", "href": str(x)} for x in range(result['e_hentai_info']['page_number'])]}])
+        with open(os.path.join(result['url'], 'book_info.json'), 'w') as f:
+            f.write(json.dumps(result))
         add_new_book(**result)
         self.is_complete = True
         pass
 
 
+class ExhentaiCrawler(EhentaiCrawler, ComicCrawler):
+    @classmethod
+    def get_name(cls):
+        return 'exhentai_crawler'
+
+    my_header = {
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
+        'Set-Cookie': 'sk=kdj6emppiihpovhjam9d30a6e4nb; expires=Sun, 08-Jan-2023 00:02:14 GMT; Max-Age=31536000; path=/; domain=.exhentai.org',
+        'Host': 'exhentai.org',
+        'Referer': 'https://exhentai.org/',
+        'Upgrade-Insecure-Requests': '1'
+    }
+
+    @staticmethod
+    def e_hentai_crawler(cls, url):  # f**k cloudfare!!
+        html = requests.get(url, headers=cls.my_header)
+        print(html.text)
+        dom = etree.HTML(html.text)
+        title = dom.xpath('//h1[@id="gn"]/text()')[0]
+        left_list = dom.xpath('//div[@id="gdd"]/table/*')
+        ehentai_info_dict = {}
+        published = datetime.strptime(left_list[0][1].text, '%Y-%m-%d %H:%M')
+        languages = left_list[3][1].text.strip()
+        length = int(left_list[-2][1].text.replace(' pages', ''))
+        ehentai_info_dict['favorited'] = left_list[-1][1].text
+        rating = float(dom.xpath('//td[@id="rating_label"]')[0].text.replace('Average: ', ''))
+        tag_list = dom.xpath('//div[@id="taglist"]/table/*')
+        tag_dict = {}
+        for tag in tag_list:
+            tag_name = tag[0].text[:-1]
+            tag_content = []
+            for content in tag[1]:
+                tag_content.append(content[0].text)
+            tag_dict[tag_name] = tag_content
+        ehentai_info_dict['tag_dict'] = tag_dict
+        if 'artist' in tag_dict:
+            author = tag_dict['artist']
+            print(author)
+        else:
+            author = ''
+        cover_url = dom.xpath('//div[@id="gd1"]/div/@style')[0].split(' ')[-2][4:-1]
+        log.debug(f'Successfully crawled URL:{url}')
+        return {
+            'title': title,
+            'published': published,
+            'languages': languages,
+            'rating': rating,
+            'length': length,
+            'cover': cover_url,
+            'source': url,
+            'author_name': author,
+            'e_hentai_info': ehentai_info_dict
+        }
+
 @BookContent.handle('ehentai_comic')
-def ehentai_comic_handler(page: str, book: Book, *args, **kwargs) -> (bytes, str):
-    log.debug(f'Process {book.title}: page: {page}')
+def ehentai_comic_handler(href: str, book: Book, *args, **kwargs) -> (bytes, str):
+    log.debug(f'Process {book.title}: page: {href}')
     if book:
-        eh_info = json.loads(book.args)
-        if os.path.exists(book.url):
-            with open(os.path.join(book.url, eh_info['page_path_list'][int(page)]), 'rb') as f:
+        page_uri = os.path.join(book.url, str(int(href) + 1) + '.jpg')
+        if os.path.exists(page_uri):
+            with open(page_uri, 'rb') as f:
                 return f.read(), 'image/jpeg'
         else:
             raise FileNotFoundError
     else:
         raise BookExistError
+
 
 # test_default_zip_downloader = EHentaiZipDownloader('test')
 # test_default_zip_downloader.start(file_path='data/[pecon (Kino)] Dokidoki Ichaicha Fuwafuwa   心神難寧, 恩恩愛愛, 輕飄飄 (Puella Magi Madoka Magica Side Story_ Magia Record) [Chinese] [Digital]-1280x.zip')

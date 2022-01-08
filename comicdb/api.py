@@ -4,7 +4,8 @@ from services.engine import get_book_by_id
 import json
 from services import db
 from services.db import Book
-from services.constant import COVER_PATH
+from services.constant import COVER_PATH, BOOK_SAVE_PATH
+import uuid
 import os
 from flask_cors import CORS, cross_origin
 
@@ -24,12 +25,22 @@ def add_header(response):
 
 @bp.route('/api/add', methods=['POST'])
 def add_book():
-    return engine.ComicCrawler.start(**request.json)
+    file_type = request.form.get('file_type', None)
+    if file_type is not None:
+        if file_type == 'epub':
+            file = request.files['file']
+            save_path = os.path.join(BOOK_SAVE_PATH, 'epub_book')
+            if not os.path.exists(save_path):
+                os.mkdir(save_path)
+            file_path = os.path.join(BOOK_SAVE_PATH, 'epub_book', str(uuid.uuid1()) + '.epub')
+            file.save(file_path)
+            return engine.ComicCrawler.start(crawler_name='epub_crawler', path=file_path)
+    else:
+        return engine.ComicCrawler.start(**request.json)
 
 
 @bp.route('/api/get_crawler_progress', methods=['POST'])
 def get_progress():
-    print(request.json)
     if 'crawler_id' in request.json:
         return engine.ComicCrawler.get_current_progress(request.json['crawler_id'])
     else:
@@ -41,7 +52,7 @@ def get_progress():
 @bp.route('/api/content', methods=['POST', 'OPTIONS'])
 def get_book_content():
     if request.method == 'OPTIONS':
-        return Response.headers
+        return {'msg': 'ok'}
     data = request.json
     content, mimetype = engine.BookContent.process(**data)
     if mimetype.startswith('path'):
@@ -53,14 +64,6 @@ def get_book_content():
 
 @bp.route('/api/info', methods=['POST'])
 def get_book_info():
-    # if request.method == 'METHODS':
-    #     response = Response()
-    #     response.headers['Access-Control-Allow-Origin'] = '*'
-    #     response.headers[
-    #         'Access-Control-Allow-Headers'] = 'Access-Control-Allow-Headers, Origin, X-Requested-With, Content-Type, Accept, Authorization'
-    #     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, HEAD'
-    #     response.headers['Access-Control-Expose-Headers'] = '*'
-    #     return response
     try:
         book_id = request.json['book_id']
         book = get_book_by_id(int(book_id))
@@ -127,20 +130,27 @@ def get_cover(cover_name):
 @bp.route('/api/list', methods=['POST'])
 def get_list_query():
     params = request.json
+    books = []
     if 'query' not in params:
         return json.dumps({'msg': 'invalid query'})
     if params['query'] == 'time':
         if 'page' not in params:
             return json.dumps({'msg': 'invalid page number'})
         books = db.BookListQuery.get_books_by_time(page=int(params['page']))
-        book_list = []
-        # while len(book_list) < 30:  # delete it after test !!!
-        for book in books:
-            book_info = {
-                'title': book.title,
-                'book_id': book.book_id,
-                'cover': book.cover.split('/')[-1],
-                'authors': [author.name for author in book.authors]
-            }
-            book_list.append(book_info)
-        return json.dumps(book_list)
+    elif params['query'] == 'author':
+        if 'author_name' not in params:
+            return json.dumps({'msg': 'invalid author name'})
+        if 'page' not in params:
+            return json.dumps({'msg': 'invalid page number'})
+        books = db.BookListQuery.get_books_by_author(page=int(params['page']), auther_name=params['author_name'])
+    book_list = []
+    for book in books:
+        book_info = {
+            'title': book.title,
+            'book_id': book.book_id,
+            'cover': book.cover.split('/')[-1],
+            'authors': [author.name for author in book.authors],
+            'series': [series.name for series in book.series]
+        }
+        book_list.append(book_info)
+    return json.dumps(book_list)
