@@ -22,8 +22,8 @@ log = logger.create_logger('ehentai_adapter')
 
 def generate_valid_path(parent_path: str, file_name: str) -> str:
     file_name = file_name.replace('/', ' ').replace('\\', ' ')
-    file_name_part = file_name.split(' ')
-    final_index = len(file_name_part)
+    # file_name_part = file_name.split(' ')
+    # final_index = len(file_name_part)
     # while True:
     #     current_path = os.path.join(parent_path, ' '.join(file_name_part[:final_index]))
     #     current_length = len(current_path)
@@ -190,8 +190,10 @@ class EhentaiCrawler(ComicCrawler):
         result['file_type'] = 'ehentai_comic'
         result['args'] = json.dumps(result['e_hentai_info'])
         result['content_info'] = json.dumps([{"name": f"共{result['e_hentai_info']['page_number']}页", "chapters": [{"name": f"第{x+1}页", "href": str(x)} for x in range(result['e_hentai_info']['page_number'])]}])
+        backup_info = result.copy()
+        backup_info['published'] = datetime.timestamp(backup_info['published'])
         with open(os.path.join(result['url'], 'book_info.json'), 'w') as f:
-            f.write(json.dumps(result))
+            f.write(json.dumps(backup_info))
         add_new_book(**result)
         self.is_complete = True
         pass
@@ -251,6 +253,7 @@ class ExhentaiCrawler(EhentaiCrawler, ComicCrawler):
             'author_name': author,
             'e_hentai_info': ehentai_info_dict
         }
+
 
 @BookContent.handle('ehentai_comic')
 def ehentai_comic_handler(href: str, book: Book, *args, **kwargs) -> (bytes, str):

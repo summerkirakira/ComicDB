@@ -422,7 +422,7 @@ class UpdateBookInfoQuery:
                     published: str = '',
                     identifiers: str = '',
                     languages: str = '',
-                    publisher_name: str = '',
+                    publisher_name: List = [],
                     description: str = '',
                     rating: str = 0,
                     last_modified: str = '',
@@ -450,19 +450,31 @@ class UpdateBookInfoQuery:
             book.identifiers = identifiers
         if languages:
             book.languages = languages
-        if publisher_name:
-            book.publishers = [publisher_name]
+        if publisher_name and publisher_name != ['']:
+            book.publishers = []
+            for single_publisher_name in publisher_name:
+                publisher = (
+                    session.query(Publisher)
+                        .filter(Publisher.name == single_publisher_name)
+                        .one_or_none()
+                )
+                if publisher is not None:
+                    log.debug(f"Publisher: {single_publisher_name} exists, skipped")
+                    book.publishers.append(publisher)
+                else:
+                    publisher = Publisher(name=single_publisher_name, description='', is_stared=0)
+                    session.add(publisher)
+                    book.publishers.append(publisher)
+                    log.debug(f"Add Publisher: {single_publisher_name}")
         if description:
             book.description = description
         if rating:
             book.rating = float(rating)
-        if last_modified:
-            book.last_modified = parse(last_modified)
         if source:
             book.source = source
         if file_type:
             book.file_type = file_type
-        if author_name:
+        if author_name and author_name != ['']:
             book.authors = []
             for single_author_name in author_name:
                 author = (
@@ -480,7 +492,7 @@ class UpdateBookInfoQuery:
                     session.add(author)
                     book.authors.append(author)
                     log.debug(f"Add author: {single_author_name}")
-        if tags:
+        if tags and tags != ['']:
             book.tags = []
             for tag_name in tags:
                 tag = (
@@ -495,7 +507,7 @@ class UpdateBookInfoQuery:
                     session.add(tag)
                 book.tags.append(tag)
                 log.debug(f"Add tag: {tag_name}")
-        if series_name:
+        if series_name and series_name != ['']:
             book.series = []
             for my_series in series_name:
                 series = (

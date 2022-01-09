@@ -53,20 +53,33 @@ class EpubCrawler(ComicCrawler):
             except IndexError:
                 cover = None
             content_info = []
-            for part in book.toc:
-                if not isinstance(part, tuple):
-                    content_info.append({
-                        "name": part.title,
-                        "chapters": [{'name': part.title, 'href': part.href}]
-                    })
-                else:
-                    content_info.append({
-                        "name": part[0].title,
-                        "chapters": [{
-                            "href": x.href,
-                            "name": x.title
-                        } for x in part[1]]
-                    })
+            chapters = []
+            if book_info['publisher'] == 'Vol.moe':
+                for part in book.toc:
+                    html = book.get_item_with_id(part.uid)
+                    root = etree.HTML(html.content)
+                    image_href = root.xpath('//img/@src')[0].split('/')[-1]
+                    name = root.xpath('//title/text()')[0]
+                    chapters.append({'name': name, 'href': image_href})
+                content_info = [{
+                    "name": "正文",
+                    "chapters": chapters
+                }]
+            else:
+                for part in book.toc:
+                    if not isinstance(part, tuple):
+                        content_info.append({
+                            "name": part.title,
+                            "chapters": [{'name': part.title, 'href': part.href}]
+                        })
+                    else:
+                        content_info.append({
+                            "name": part[0].title,
+                            "chapters": [{
+                                "href": x.href,
+                                "name": x.title
+                            } for x in part[1]]
+                        })
             book_info['content_info'] = content_info
             book_info['cover'] = cover
             book_info['url'] = kwargs['path']
@@ -93,7 +106,10 @@ class EpubCrawler(ComicCrawler):
             book_info['cover'] = os.path.join(COVER_PATH, f'{cover_id}.{cover_extend}')
         else:
             book_info['cover'] = os.path.join(COVER_PATH, 'default_cover.jpg')
-        book_info['file_type'] = 'default_epub'
+        if book_info['publisher'] == 'Vol.moe':
+            book_info['file_type'] = 'vol_epub'
+        else:
+            book_info['file_type'] = 'default_epub'
         book_info['source'] = 'epub_crawler'
         if book_info['published']:
             book_info['published'] = parse(book_info['published'])
@@ -107,4 +123,12 @@ class EpubCrawler(ComicCrawler):
 @BookContent.handle('default_epub')
 def get_epub_resource(book: Book, *args, **kwargs) -> [bytes, str]:
     return book.url, f'path/{book.title}.epub'
+
+
+@BookContent.handle('vol_epub')
+def _get_vol_img(book: Book, href: str, *args, **kwargs) -> (bytes, str):
+    if os.path.exists(book.url):
+        my_zip = zipfile.ZipFile(book.url)
+        with my_zip.open(os.path.join('image', href)) as file:
+            return file.read(), 'image/jpeg'
 
