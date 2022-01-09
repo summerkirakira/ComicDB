@@ -35,6 +35,16 @@ def add_book():
             file_path = os.path.join(BOOK_SAVE_PATH, 'epub_book', str(uuid.uuid1()) + '.epub')
             file.save(file_path)
             return engine.ComicCrawler.start(crawler_name='epub_crawler', path=file_path)
+        elif file_type == 'default_txt':
+            file = request.files['file']
+            title = file.filename.split('.')[-2]
+            save_path = os.path.join(BOOK_SAVE_PATH, 'txt_book')
+            if not os.path.exists(save_path):
+                os.mkdir(save_path)
+            file_path = os.path.join(BOOK_SAVE_PATH, 'txt_book', str(uuid.uuid1()) + '.txt')
+            file.save(file_path)
+            return engine.ComicCrawler.start(crawler_name='default_txt_crawler', path=file_path, title=title)
+
     else:
         return engine.ComicCrawler.start(**request.json)
 

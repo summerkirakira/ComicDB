@@ -3,6 +3,7 @@ from services import logger
 from services.engine import BookInfoModule, ComicDownloader, BookContent, ComicCrawler
 from services.exception import FileExtendNotMatchError, BookExistError
 from services.db import add_new_book, get_book_by_id, Book
+from services import constant
 import re
 from services.constant import COVER_PATH
 import os
@@ -255,9 +256,26 @@ class ExhentaiCrawler(EhentaiCrawler, ComicCrawler):
         }
 
 
+def compress_file(zipfilename, dirname):
+    if os.path.isfile(dirname):
+        with zipfile.ZipFile(zipfilename, 'w') as z:
+            z.write(dirname)
+    else:
+        with zipfile.ZipFile(zipfilename, 'w') as z:
+            for root, dirs, files in os.walk(dirname):
+                for single_file in files:
+                    if single_file != zipfilename:
+                        filepath = os.path.join(root, single_file)
+                        z.write(filepath, single_file)
+
+
 @BookContent.handle('ehentai_comic')
 def ehentai_comic_handler(href: str, book: Book, *args, **kwargs) -> (bytes, str):
     log.debug(f'Process {book.title}: page: {href}')
+    if 'is_download' in kwargs and kwargs['is_download']:
+        temp_file = os.path.abspath(os.path.join(constant.TEMP_PATH, book.uuid + '.zip'))
+        compress_file(temp_file, book.url)
+        return temp_file, f'path/{book.title}.zip'
     if book:
         page_uri = os.path.join(book.url, str(int(href) + 1) + '.jpg')
         if os.path.exists(page_uri):

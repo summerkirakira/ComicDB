@@ -122,11 +122,13 @@ class EpubCrawler(ComicCrawler):
 
 @BookContent.handle('default_epub')
 def get_epub_resource(book: Book, *args, **kwargs) -> [bytes, str]:
-    return book.url, f'path/{book.title}.epub'
+    return os.path.abspath(book.url), f'path/{book.title}.epub'
 
 
 @BookContent.handle('vol_epub')
 def _get_vol_img(book: Book, href: str, *args, **kwargs) -> (bytes, str):
+    if 'is_download' in kwargs and kwargs['is_download']:
+        return os.path.abspath(book.url), f'path/{book.title}.epub'
     if os.path.exists(book.url):
         my_zip = zipfile.ZipFile(book.url)
         with my_zip.open(os.path.join('image', href)) as file:
