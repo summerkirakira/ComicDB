@@ -79,6 +79,7 @@ def get_book_info():
             tags = []
             for tag in book.tags:
                 tags.append(tag.name)
+            publishers = [publisher.name for publisher in book.publishers]
             series = []
             for my_series in book.series:
                 series.append({
@@ -90,6 +91,7 @@ def get_book_info():
                 'book_id': book.book_id,
                 'title': book.title,
                 'published': str(book.published),
+                'publishers': publishers,
                 'identifiers': book.identifiers,
                 'language': book.languages,
                 'series_id': book.series_id,
@@ -138,11 +140,35 @@ def get_list_query():
             return json.dumps({'msg': 'invalid page number'})
         books = db.BookListQuery.get_books_by_time(page=int(params['page']))
     elif params['query'] == 'author':
-        if 'author_name' not in params:
+        if 'matcher' not in params:
             return json.dumps({'msg': 'invalid author name'})
         if 'page' not in params:
             return json.dumps({'msg': 'invalid page number'})
-        books = db.BookListQuery.get_books_by_author(page=int(params['page']), auther_name=params['author_name'])
+        if 'fuzzy' in params and params['fuzzy']:
+            books = db.BookListQuery.get_books_by_like_author(page=int(params['page']), auther_name=params['matcher'])
+        else:
+            books = db.BookListQuery.get_books_by_author(page=int(params['page']), auther_name=params['matcher'])
+    elif params['query'] == 'title':
+        if 'matcher' not in params:
+            return json.dumps({'msg': 'invalid book name'})
+        if 'fuzzy' in params and params['fuzzy']:
+            books = db.BookListQuery.get_books_by_like_name(page=int(params['page']), book_name=params['matcher'])
+        else:
+            books = db.BookListQuery.get_books_by_name(page=int(params['page']), book_name=params['matcher'])
+    elif params['query'] == 'series':
+        if 'matcher' not in params:
+            return json.dumps({'msg': 'invalid series name'})
+        if 'fuzzy' in params and params['fuzzy']:
+            books = db.BookListQuery.get_books_by_like_series(page=int(params['page']), series_name=params['matcher'])
+        else:
+            books = db.BookListQuery.get_books_by_series(page=int(params['page']), series_name=params['matcher'])
+    elif params['query'] == 'tag':
+        if 'matcher' not in params:
+            return json.dumps({'msg': 'invalid tag name'})
+        if 'fuzzy' in params and params['fuzzy']:
+            books = db.BookListQuery.get_books_by_like_tag(page=int(params['page']), tag_name=params['matcher'])
+        else:
+            books = db.BookListQuery.get_books_by_tag(page=int(params['page']), tag_name=params['matcher'])
     book_list = []
     for book in books:
         book_info = {
@@ -154,3 +180,34 @@ def get_list_query():
         }
         book_list.append(book_info)
     return json.dumps(book_list)
+
+
+@bp.route('/api/update', methods=['POST'])
+def _update_book():
+    book_id = request.form.get('book_id', None)
+    if book_id:
+        if 'file' not in request.files:
+            return {'msg': 'error'}
+        file = request.files['file']
+        cover_name = str(uuid.uuid1()) + '.' + file.filename.split('.')[-1]
+        file_path = os.path.join(COVER_PATH, cover_name)
+        file.save(file_path)
+        if db.UpdateBookInfoQuery.update_cover(file_path=file_path, book_id=int(book_id)):
+            return json.dumps({'msg': 'ok', 'cover_name': cover_name})
+        else:
+            return json.dumps({'msg': 'error'})
+    else:
+        params = request.json
+        if 'book_id' not in params:
+            return {'msg': 'error'}
+        db.UpdateBookInfoQuery.update_info(**params)
+        return {'msg': 'ok'}
+
+
+@bp.route('/api/adapters', methods=["POST"])
+def _get_adapters():
+    adapter_list = [{'label': engine.BookContent.adapter_translate(adapter_name),
+                     'value': adapter_name}
+                    for adapter_name in engine.BookContent.get_register_adapters()]
+    return json.dumps(adapter_list)
+

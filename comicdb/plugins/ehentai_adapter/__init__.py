@@ -183,7 +183,7 @@ class EhentaiCrawler(ComicCrawler):
         return False
 
     def insert_book(self, result: dict):
-        result['tags'] = []
+        result['tags'] = ['e-hentai']
         for tag_key in result['e_hentai_info']['tag_dict']:
             for tag_value in result['e_hentai_info']['tag_dict'][tag_key]:
                 result['tags'].append(tag_value)

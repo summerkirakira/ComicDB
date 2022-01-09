@@ -107,6 +107,22 @@ class BookContent:
             log.error(f'No adapter found for {file_type}! please check the log that if load the correct plugin')
             raise NoContentAdapterError
 
+    @classmethod
+    def get_register_adapters(cls):
+        return [file_type for file_type in cls.book_content_adapters]
+
+    @classmethod
+    def adapter_translate(cls, adapter_name):
+        name_dict = {
+            'default_zip': '默认TXT',
+            'default_epub': '默认EPUB',
+            'ehentai_comic': 'E-hentai漫画'
+        }
+        if adapter_name in name_dict:
+            return name_dict[adapter_name]
+        else:
+            return adapter_name
+
 
 class ComicDownloader:
     """Default comic downloader, used to download book from Internet or convert save file to database"""

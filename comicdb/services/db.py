@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship, backref, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from services.logger import create_logger
 from services import constant
+from dateutil.parser import parse
 import datetime
 from typing import (TYPE_CHECKING, Any, Dict, List, Type, Union, Optional,
                     ForwardRef)
@@ -170,9 +171,9 @@ def add_new_book(title: str,
                  *args, **kwargs) -> Book:
     book = (
         session.query(Book)
-        .filter(Book.title == title)
-        .filter(or_(Book.publishers == None, Book.publishers.any(Publisher.name == publisher_name)))
-        .one_or_none()
+            .filter(Book.title == title)
+            .filter(or_(Book.publishers == None, Book.publishers.any(Publisher.name == publisher_name)))
+            .one_or_none()
     )
     if book is not None:
         log.debug(f"Book: {title} exists, skipped")
@@ -197,8 +198,8 @@ def add_new_book(title: str,
         session.add(book)
     publisher = (
         session.query(Publisher)
-        .filter(Publisher.name == publisher_name)
-        .one_or_none()
+            .filter(Publisher.name == publisher_name)
+            .one_or_none()
     )
     if publisher_name:
         if publisher is not None:
@@ -212,8 +213,8 @@ def add_new_book(title: str,
         for single_author_name in author_name:
             author = (
                 session.query(Author)
-                .filter(Author.name == single_author_name)
-                .one_or_none()
+                    .filter(Author.name == single_author_name)
+                    .one_or_none()
             )
 
             if author is not None:
@@ -228,8 +229,8 @@ def add_new_book(title: str,
     for tag_name in tags:
         tag = (
             session.query(Tag)
-            .filter(Tag.name == tag_name)
-            .one_or_none()
+                .filter(Tag.name == tag_name)
+                .one_or_none()
         )
         if tag is not None:
             log.debug(f"Tag: {tag_name} exists, skipped")
@@ -241,8 +242,8 @@ def add_new_book(title: str,
     if series_name:
         series = (
             session.query(Series)
-            .filter(Series.name == series_name)
-            .one_or_none()
+                .filter(Series.name == series_name)
+                .one_or_none()
         )
         if series is not None:
             log.debug(f"Series: {series_name} exists, skipped")
@@ -288,8 +289,8 @@ def update_book_info(book_id, **kwargs) -> [Book, None]:
             for author_name in kwargs[key]:
                 author = (
                     session.query(Author)
-                    .filter(Author.name == author_name)
-                    .one_or_none()
+                        .filter(Author.name == author_name)
+                        .one_or_none()
                 )
 
                 if author is not None:
@@ -334,14 +335,14 @@ def update_book_info(book_id, **kwargs) -> [Book, None]:
 class BookListQuery:
     @classmethod
     def get_books_by_time(cls, page: int = 0, page_size: int = 30) -> List[Book]:
-        q = session.query(Book).offset(page*page_size).limit(page_size)
+        q = session.query(Book).offset(page * page_size).limit(page_size)
         return q
 
     @classmethod
     def get_books_by_author(cls, page: int = 0, page_size: int = 30, auther_name: str = '') -> List[Book]:
         q = (session.query(Book)
              .filter(Book.authors.any(Author.name == auther_name))
-             .offset(page*page_size)
+             .offset(page * page_size)
              .limit(page_size))
         return q
 
@@ -356,7 +357,15 @@ class BookListQuery:
     @classmethod
     def get_books_by_series(cls, page: int = 0, page_size: int = 30, series_name: str = '') -> List[Book]:
         q = (session.query(Book)
-             .filter(Book.publishers.any(Publisher.name == series_name))
+             .filter(Book.series.any(Series.name == series_name))
+             .offset(page * page_size)
+             .limit(page_size))
+        return q
+
+    @classmethod
+    def get_books_by_tag(cls, page: int = 0, page_size: int = 30, tag_name: str = '') -> List[Book]:
+        q = (session.query(Book)
+             .filter(Book.tags.any(Tag.name == tag_name))
              .offset(page * page_size)
              .limit(page_size))
         return q
@@ -380,9 +389,128 @@ class BookListQuery:
     @classmethod
     def get_books_by_like_series(cls, page: int = 0, page_size: int = 30, series_name: str = '') -> List[Book]:
         q = (session.query(Book)
-             .filter(Book.publishers.any(Publisher.name.contains(series_name)))
+             .filter(Book.series.any(Series.name.contains(series_name)))
              .offset(page * page_size)
              .limit(page_size))
         return q
 
+    @classmethod
+    def get_books_by_like_tag(cls, page: int = 0, page_size: int = 30, tag_name: str = '') -> List[Book]:
+        q = (session.query(Book)
+             .filter(Book.tags.any(Tag.name.contains(tag_name)))
+             .offset(page * page_size)
+             .limit(page_size))
+        return q
+
+
+class UpdateBookInfoQuery:
+    @classmethod
+    def update_cover(cls, file_path: str, book_id: int) -> bool:
+        book = (session.query(Book)
+                .filter(Book.book_id == book_id)
+                .one_or_none())
+        if not book:
+            return False
+        book.cover = file_path
+        session.add(book)
+        session.commit()
+        return True
+
+    @classmethod
+    def update_info(cls, book_id: int,
+                    title: str = '',
+                    published: str = '',
+                    identifiers: str = '',
+                    languages: str = '',
+                    publisher_name: str = '',
+                    description: str = '',
+                    rating: str = 0,
+                    last_modified: str = '',
+                    is_read: int = 0,
+                    is_stared: int = 0,
+                    source: str = '',
+                    url: str = '',
+                    series_id: str = '',
+                    file_type: str = '',
+                    author_name: List = [],
+                    tags: Union[str] = [],
+                    content_info: str = '',
+                    series_name: List = [],
+                    *args, **kwargs) -> bool:
+        book = (session.query(Book)
+                .filter(Book.book_id == book_id)
+                .one_or_none())
+        if not book:
+            return False
+        if title:
+            book.title = title
+        if published:
+            book.published = parse(published)
+        if identifiers:
+            book.identifiers = identifiers
+        if languages:
+            book.languages = languages
+        if publisher_name:
+            book.publishers = [publisher_name]
+        if description:
+            book.description = description
+        if rating:
+            book.rating = float(rating)
+        if last_modified:
+            book.last_modified = parse(last_modified)
+        if source:
+            book.source = source
+        if file_type:
+            book.file_type = file_type
+        if author_name:
+            book.authors = []
+            for single_author_name in author_name:
+                author = (
+                    session.query(Author)
+                        .filter(Author.name == single_author_name)
+                        .one_or_none()
+                )
+
+                if author is not None:
+                    log.debug(f"Author: {single_author_name} exists, skipped")
+                    book.authors.append(author)
+                else:
+                    author = Author(name=single_author_name, picture='data/author/default.png', description='',
+                                    is_stared=0)
+                    session.add(author)
+                    book.authors.append(author)
+                    log.debug(f"Add author: {single_author_name}")
+        if tags:
+            book.tags = []
+            for tag_name in tags:
+                tag = (
+                    session.query(Tag)
+                        .filter(Tag.name == tag_name)
+                        .one_or_none()
+                )
+                if tag is not None:
+                    log.debug(f"Tag: {tag_name} exists, skipped")
+                else:
+                    tag = Tag(name=tag_name)
+                    session.add(tag)
+                book.tags.append(tag)
+                log.debug(f"Add tag: {tag_name}")
+        if series_name:
+            book.series = []
+            for my_series in series_name:
+                series = (
+                    session.query(Series)
+                        .filter(Series.name == my_series)
+                        .one_or_none()
+                )
+                if series is not None:
+                    log.debug(f"Series: {my_series} exists, skipped")
+                else:
+                    series = Series(name=my_series, description='')
+                book.series.append(series)
+            if series_id:
+                book.series_id = int(series_id)
+        session.add(book)
+        session.commit()
+        return True
 
