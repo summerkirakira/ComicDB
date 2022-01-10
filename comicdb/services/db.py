@@ -332,10 +332,19 @@ def update_book_info(book_id, **kwargs) -> [Book, None]:
     return book
 
 
+def delete_book(book_id: int) -> bool:
+    book = session.query(Book).filter(Book.book_id == book_id).delete()
+    if book:
+        session.commit()
+        return True
+    else:
+        return False
+
+
 class BookListQuery:
     @classmethod
     def get_books_by_time(cls, page: int = 0, page_size: int = 30) -> List[Book]:
-        q = session.query(Book).offset(page * page_size).limit(page_size)
+        q = session.query(Book).order_by(Book.book_id.desc()).offset(page * page_size).limit(page_size)
         return q
 
     @classmethod
@@ -525,4 +534,3 @@ class UpdateBookInfoQuery:
         session.add(book)
         session.commit()
         return True
-

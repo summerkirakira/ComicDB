@@ -125,9 +125,6 @@ class EhentaiCrawler(ComicCrawler):
         cover_uuid = str(uuid.uuid1())
         cover_url = book_info['cover']
         book_info['cover'] = os.path.join(COVER_PATH, f"{cover_uuid}.{cover_url.split('.')[-1]}")
-        with open(book_info['cover'], 'wb') as f:
-            f.write(cover_img.content)
-        page_max: int = book_info['length'] // 40 + 1
         book_folder_url = generate_valid_path(os.path.join('data', 'books', 'ehentai_comic'),
                                               book_info['title'])
         try:
@@ -141,6 +138,11 @@ class EhentaiCrawler(ComicCrawler):
 
         except FileExistsError:
             pass
+        with open(book_info['cover'], 'wb') as f:
+            f.write(cover_img.content)
+        with open(os.path.join(book_folder_url, 'cover.jpg'), 'wb') as f:
+            f.write(cover_img.content)
+        page_max: int = book_info['length'] // 40 + 1
         image_path_list = []
         image_url_list = []
         img_index = 1
@@ -286,6 +288,55 @@ def ehentai_comic_handler(href: str, book: Book, *args, **kwargs) -> (bytes, str
     else:
         raise BookExistError
 
+
+class EhentaiZipCrawler(ComicCrawler):
+    @classmethod
+    def get_name(cls):
+        return 'ehentai_zip_crawler'
+
+    def get_book_info(self, *args, **kwargs) -> dict:
+        if 'path' not in kwargs:
+            return {}
+        book_path = kwargs['path']
+        my_zip = zipfile.ZipFile(book_path)
+        path, filename = os.path.split(book_path)
+        name, extend = os.path.splitext(filename)
+        save_path = os.path.join(constant.BOOK_SAVE_PATH, 'ehentai_comic', name)
+        log.error(save_path)
+        if os.path.exists(save_path):
+            log.error('Book exists!')
+            return {}
+        else:
+            os.mkdir(save_path)
+        for file in my_zip.namelist():
+            my_zip.extract(file, save_path)
+        my_zip.close()
+        cover_path = os.path.join(COVER_PATH, str(uuid.uuid1()) + '.jpg')
+        with open(os.path.join(save_path, 'cover.jpg'), 'rb') as cover:
+            with open(cover_path, 'wb') as f:
+                f.write(cover.read())
+        with open(os.path.join(save_path, 'book_info.json'), 'r') as f:
+            book_info = json.loads(f.read())
+        book_info['cover'] = cover_path
+        book_info['url'] = save_path
+        return book_info
+
+    def can_crawl(self, book: Book) -> [bool, dict]:
+        return False
+
+    def insert_book(self, result: dict):
+        add_new_book(**result)
+        self.is_complete = True
+        self.update_progress('insert_complete')
+        pass
+
+    def crawl(self, future: Future):
+        book_info = future.result()
+        if not book_info:
+            return {}
+        book_info['published'] = datetime.fromtimestamp(book_info['published'])
+        self.insert_book(book_info)
+        pass
 
 # test_default_zip_downloader = EHentaiZipDownloader('test')
 # test_default_zip_downloader.start(file_path='data/[pecon (Kino)] Dokidoki Ichaicha Fuwafuwa   心神難寧, 恩恩愛愛, 輕飄飄 (Puella Magi Madoka Magica Side Story_ Magia Record) [Chinese] [Digital]-1280x.zip')

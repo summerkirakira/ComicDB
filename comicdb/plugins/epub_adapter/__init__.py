@@ -108,6 +108,7 @@ class EpubCrawler(ComicCrawler):
             book_info['cover'] = os.path.join(COVER_PATH, 'default_cover.jpg')
         if book_info['publisher'] == 'Vol.moe':
             book_info['file_type'] = 'vol_epub'
+            book_info['tags'] = ['vol.moe']
         else:
             book_info['file_type'] = 'default_epub'
         book_info['source'] = 'epub_crawler'

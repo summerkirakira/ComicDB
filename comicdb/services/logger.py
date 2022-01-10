@@ -2,8 +2,8 @@ import logging
 
 
 logging.basicConfig(
-    filename='log/develop_debug.log',
-    level=logging.DEBUG,
+    filename='log/comicdb.log',
+    level=logging.INFO,
     format='[%(asctime)s][%(levelname)s][%(name)s]%(message)s',
     datefmt='%Y-%m-%d %H:%M:%S, '
 )

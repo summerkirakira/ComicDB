@@ -5,14 +5,11 @@ import os
 import sys
 
 current_path = os.path.abspath(os.path.dirname(__file__))
-print(current_path)
 sys.path.append(current_path)
 
+from flask import Flask
+from services import logger, pre_start
 
-from services.db import create_all_db
-from flask import Flask, request, Response, send_file
-from services import logger
-from services.engine import get_book_by_id
 log = logger.create_logger('main')
 
 
@@ -33,7 +30,7 @@ class Platform:
 
 
 def create_app():
-    create_all_db()
+    pre_start.start()
     app = Flask(__name__, instance_relative_config=True)
     app.config['CORS_HEADERS'] = 'Content-Type'
     import auth, bookinfo, api

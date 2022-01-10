@@ -4,7 +4,7 @@ from services.engine import get_book_by_id
 import json
 from services import db
 from services.db import Book
-from services.constant import COVER_PATH, BOOK_SAVE_PATH
+from services.constant import COVER_PATH, BOOK_SAVE_PATH, TEMP_PATH
 import uuid
 import os
 from flask_cors import CORS, cross_origin
@@ -44,6 +44,12 @@ def add_book():
             file_path = os.path.join(BOOK_SAVE_PATH, 'txt_book', str(uuid.uuid1()) + '.txt')
             file.save(file_path)
             return engine.ComicCrawler.start(crawler_name='default_txt_crawler', path=file_path, title=title)
+        elif file_type == 'ehentai_zip':
+            file = request.files['file']
+            title = file.filename.split('.')[-2]
+            save_path = os.path.join(TEMP_PATH, f"{title}.zip")
+            file.save(save_path)
+            return engine.ComicCrawler.start(crawler_name='ehentai_zip_crawler', path=save_path)
 
     else:
         return engine.ComicCrawler.start(**request.json)
@@ -221,3 +227,14 @@ def _get_adapters():
                     for adapter_name in engine.BookContent.get_register_adapters()]
     return json.dumps(adapter_list)
 
+
+@bp.route('/api/delete', methods=["post"])
+def _delete_book():
+    params = request.json
+    if 'book_id' in params:
+        status = db.delete_book(int(params['book_id']))
+        if status:
+            return {'msg': 'ok'}
+        else:
+            return {'msg': 'fail'}
+    return {'msg': 'error'}
