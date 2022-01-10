@@ -22,6 +22,8 @@ def check_folder():
         os.mkdir('database')
     if not os.path.exists('log'):
         os.mkdir('log')
+    if not os.path.exists(os.path.join('data', 'books')):
+        os.mkdir(os.path.join('data', 'books'))
     if not os.path.exists(os.path.join('cover', 'default_cover.jpg')):
         with open(os.path.join('comicdb', 'src', 'default_cover.jpg'), 'rb') as f:
             with open(os.path.join('data', 'cover', 'default_cover.jpg'), 'wb') as cover:
@@ -29,7 +31,7 @@ def check_folder():
 
 
 def start():
-    remove_temp()
     check_folder()
+    remove_temp()
     create_all_db()
 

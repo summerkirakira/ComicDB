@@ -338,6 +338,10 @@ class EhentaiZipCrawler(ComicCrawler):
         self.insert_book(book_info)
         pass
 
+
+if not os.path.exists(os.path.join('data', 'books', 'ehentai_comic')):
+    os.mkdir(os.path.join('data', 'books', 'ehentai_comic'))
+
 # test_default_zip_downloader = EHentaiZipDownloader('test')
 # test_default_zip_downloader.start(file_path='data/[pecon (Kino)] Dokidoki Ichaicha Fuwafuwa   心神難寧, 恩恩愛愛, 輕飄飄 (Puella Magi Madoka Magica Side Story_ Magia Record) [Chinese] [Digital]-1280x.zip')
 

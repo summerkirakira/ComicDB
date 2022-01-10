@@ -135,3 +135,7 @@ def _get_vol_img(book: Book, href: str, *args, **kwargs) -> (bytes, str):
         with my_zip.open(os.path.join('image', href)) as file:
             return file.read(), 'image/jpeg'
 
+
+if not os.path.exists(os.path.join('data', 'books', 'epub_book')):
+    os.mkdir(os.path.join('data', 'books', 'epub_book'))
+

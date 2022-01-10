@@ -45,3 +45,7 @@ def _upload_txt(book: Book, *args, **kwargs):
     if 'is_download' in kwargs and kwargs['is_download']:
         return os.path.abspath(book.url), f'path/{book.title}.txt'
 
+
+if not os.path.exists(os.path.join('data', 'books', 'txt_book')):
+    os.mkdir(os.path.join('data', 'books', 'txt_book'))
+

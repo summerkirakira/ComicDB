@@ -7,7 +7,7 @@ import sys
 current_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_path)
 
-from flask import Flask
+from flask import Flask, render_template
 from services import logger, pre_start
 
 log = logger.create_logger('main')
@@ -31,7 +31,11 @@ class Platform:
 
 def create_app():
     pre_start.start()
-    app = Flask(__name__, instance_relative_config=True)
+    app = Flask(__name__,
+                static_url_path='',
+                static_folder='./static',
+                template_folder="./templates"
+                )
     app.config['CORS_HEADERS'] = 'Content-Type'
     import auth, bookinfo, api
     app.register_blueprint(auth.bp)
@@ -39,6 +43,27 @@ def create_app():
     app.register_blueprint(api.bp)
     app.jinja_env.variable_start_string = '{['
     app.jinja_env.variable_end_string = ']}'
+
+    @app.route('/')
+    def index():
+        return render_template('index.html')
+
+    @app.route('/<path>')
+    def fallback(path):
+        if path.startswith('css/') or path.startswith('js/') \
+                or path.startswith('img/') or path == 'favicon.ico':
+            return app.send_static_file(path)
+        else:
+            return render_template('index.html')
+
+    @app.route('/book/<path>')
+    def jump_to(path):
+        return render_template('index.html')
+
+    @app.route('/read/<path>')
+    def _jump_to(path):
+        return render_template('index.html')
+
     platform = Platform()
     return app
 

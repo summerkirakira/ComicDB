@@ -1,5 +1,8 @@
 import logging
+import os
 
+if not os.path.exists('log'):
+    os.mkdir('log')
 
 logging.basicConfig(
     filename='log/comicdb.log',

@@ -137,7 +137,7 @@ def get_book_info():
 
 @bp.route('/api/cover/<cover_name>', methods=['GET'])
 def get_cover(cover_name):
-    print(os.path.join(COVER_PATH, cover_name))
+    # print(os.path.join(COVER_PATH, cover_name))
     file_path = os.path.abspath(os.path.join(COVER_PATH, cover_name))
     if os.path.exists(file_path):
         return send_file(file_path)
@@ -238,3 +238,5 @@ def _delete_book():
         else:
             return {'msg': 'fail'}
     return {'msg': 'error'}
+
+
