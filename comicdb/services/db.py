@@ -1,12 +1,11 @@
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, Table, Integer, DateTime, create_engine, and_, or_
-from sqlalchemy.orm import relationship, backref, sessionmaker
+from sqlalchemy import Column, String, Float, ForeignKey, Table, Integer, DateTime, create_engine, and_, or_
+from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from services.logger import create_logger
 from services import constant
 from dateutil.parser import parse
 import datetime
-from typing import (TYPE_CHECKING, Any, Dict, List, Type, Union, Optional,
-                    ForwardRef)
+from typing import (List, Union)
 import uuid
 
 log = create_logger('database')

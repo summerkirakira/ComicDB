@@ -3,11 +3,10 @@ from services import engine
 from services.engine import get_book_by_id
 import json
 from services import db
-from services.db import Book
 from services.constant import COVER_PATH, BOOK_SAVE_PATH, TEMP_PATH
 import uuid
 import os
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 
 bp = Blueprint('api', __name__)

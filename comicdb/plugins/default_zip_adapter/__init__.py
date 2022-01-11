@@ -1,7 +1,7 @@
 from services import logger
 from services.engine import ComicDownloader, BookContent, BookInfoModule
 from services.exception import FileExtendNotMatchError, BookExistError
-from services.db import add_new_book, get_book_by_id, Book
+from services.db import add_new_book, Book
 from services.constant import COVER_PATH
 from flask import render_template
 import os

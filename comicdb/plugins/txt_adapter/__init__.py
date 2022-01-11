@@ -1,6 +1,6 @@
 from concurrent.futures._base import Future
-from services.engine import BookInfoModule, ComicDownloader, BookContent, ComicCrawler
-from services.db import add_new_book, get_book_by_id, Book
+from services.engine import BookContent, ComicCrawler
+from services.db import add_new_book, Book
 import os
 import json
 

@@ -1,15 +1,11 @@
 from functools import wraps
-from typing import Dict, Any, Type, List
-from collections import defaultdict
 from services import logger
 from services.exception import NoContentAdapterError, NoFileTypeError
 from concurrent.futures import ThreadPoolExecutor, Future
 from services.db import get_book_by_id, Book
 import uuid
-import time
 import json
 import abc
-from flask import render_template
 
 log = logger.create_logger('Engine')
 

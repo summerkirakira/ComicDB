@@ -1,22 +1,12 @@
 from concurrent.futures._base import Future
-from services import logger
-from services.engine import BookInfoModule, ComicDownloader, BookContent, ComicCrawler
-from services.exception import FileExtendNotMatchError, BookExistError
-from services.db import add_new_book, get_book_by_id, Book
-import re
+from services.engine import BookContent, ComicCrawler
+from services.db import add_new_book, Book
 from services.constant import COVER_PATH
 import os
 import zipfile
-import requests
-from lxml import etree
 import uuid
-import time
 from lxml import etree
 import json
-from datetime import datetime
-import random
-from ..default_zip_adapter import DefaultZipDownloader
-import ebooklib
 from dateutil.parser import parse
 from ebooklib import epub
 
