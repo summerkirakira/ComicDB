@@ -1,3 +1,3 @@
 export FLASK_APP=comicdb
 export FLASK_ENV=production
-flask run
+waitress-serve --port=8080 --call 'comicdb:create_app'
