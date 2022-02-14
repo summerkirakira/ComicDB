@@ -10,10 +10,13 @@ A **developing** book database that allows you to easily crawl and store your fa
 
 <h2>Usage</h2>
 install requirements
+
 ```shell
 pip install -r requirements.txt
 ```
+
 run the flask server
+
 ```shell
 ./run.sh
 ```
