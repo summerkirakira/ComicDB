@@ -189,7 +189,7 @@ def get_list_query():
         book_info = {
             'title': book.title,
             'book_id': book.book_id,
-            'cover': book.cover.split('/')[-1],
+            'cover': os.path.split(book.cover)[-1],
             'authors': [author.name for author in book.authors],
             'series': [series.name for series in book.series]
         }
