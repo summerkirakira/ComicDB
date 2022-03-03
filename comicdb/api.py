@@ -1,9 +1,12 @@
+import traceback
+
 from flask import Blueprint, request, Response, send_file
 from services import engine
 from services.engine import get_book_by_id
 import json
 from services import db
 from services.constant import COVER_PATH, BOOK_SAVE_PATH, TEMP_PATH
+from services.util import dmzj_chapter_sort
 import uuid
 import os
 from flask_cors import CORS
@@ -101,6 +104,16 @@ def get_book_info():
                     "name": my_series.name,
                     "description": my_series.description
                 })
+            content_info = json.loads(book.content_info)
+            try:
+                if book.file_type == 'dmzj_zip':
+                    new_content = []
+                    for chapter in content_info:
+                        chapter['chapters'].sort(key=dmzj_chapter_sort)
+                        new_content.append(chapter)
+                    content_info = new_content
+            except Exception as e:
+                traceback.print_exc()
             msg = {
                 'status': 'ok',
                 'book_id': book.book_id,
@@ -120,7 +133,7 @@ def get_book_info():
                 'source': book.source,
                 'uuid': book.uuid,
                 'args': book.args,
-                'content_info': json.loads(book.content_info),
+                'content_info': content_info,
                 'file_type': book.file_type,
                 'tags': tags,
                 'series': series
